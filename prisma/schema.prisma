@@ -1,0 +1,269 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+//  ENUMS
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  STAFF        // Admin Bagian
+  AGENDARIS
+  DIREKTUR
+  ADMIN
+}
+
+enum DocumentStatus {
+  DRAFT
+  MENUNGGU_REVIEW_AGENDARIS
+  PERLU_REVISI
+  MENUNGGU_KEPUTUSAN_DIREKTUR
+  DIPROSES_DIREKTUR
+  KEPUTUSAN_DIREKTUR_SELESAI
+  MENUNGGU_PENGAMBILAN_STAFF
+  MENUNGGU_SCAN_FINAL
+  MENUNGGU_ARSIP_ADMIN
+  ARSIP_FINAL_TERSIMPAN
+}
+
+enum DecisionType {
+  DISETUJUI
+  DITOLAK
+  REVISI
+  DISPOSISI
+}
+
+enum FileType {
+  DRAFT
+  FINAL_SCAN
+  ATTACHMENT
+}
+
+enum ReviewStatus {
+  DITERUSKAN
+  DIKEMBALIKAN
+}
+
+enum HandoverStatus {
+  MENUNGGU
+  DIKONFIRMASI
+}
+
+// ─────────────────────────────────────────────
+//  USERS
+// ─────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  role          UserRole
+  divisi        String?
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  documentsCreated  Document[]        @relation("DocumentCreator")
+  documentReviews   DocumentReview[]
+  directorDecisions DirectorDecision[]
+  handoverLogs      HandoverLog[]
+  archivesCreated   Archive[]
+  auditLogs         AuditLog[]
+  uploadedFiles     DocumentFile[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+//  DOCUMENTS
+// ─────────────────────────────────────────────
+
+model Document {
+  id             String         @id @default(cuid())
+  nomorSurat     String         @unique @map("nomor_surat")
+  perihal        String
+  deskripsi      String?
+  tujuan         String?
+  tanggalSurat   DateTime       @map("tanggal_surat")
+  currentStatus  DocumentStatus @default(DRAFT) @map("current_status")
+  currentHolder  String?        @map("current_holder")
+  createdById    String         @map("created_by")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  createdBy         User               @relation("DocumentCreator", fields: [createdById], references: [id])
+  files             DocumentFile[]
+  reviews           DocumentReview[]
+  decisions         DirectorDecision[]
+  handoverLogs      HandoverLog[]
+  archive           Archive?
+  auditLogs         AuditLog[]
+  statusTimeline    StatusTimeline[]
+
+  @@index([currentStatus])
+  @@index([createdById])
+  @@index([nomorSurat])
+  @@map("documents")
+}
+
+// ─────────────────────────────────────────────
+//  DOCUMENT FILES
+// ─────────────────────────────────────────────
+
+model DocumentFile {
+  id          String   @id @default(cuid())
+  documentId  String   @map("document_id")
+  fileType    FileType @map("file_type")
+  fileName    String   @map("file_name")
+  filePath    String   @map("file_path")
+  fileSize    Int?     @map("file_size")
+  mimeType    String?  @map("mime_type")
+  uploadedById String  @map("uploaded_by")
+  uploadedAt  DateTime @default(now()) @map("uploaded_at")
+
+  // Relations
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  uploadedBy  User     @relation(fields: [uploadedById], references: [id])
+
+  @@index([documentId])
+  @@index([fileType])
+  @@map("document_files")
+}
+
+// ─────────────────────────────────────────────
+//  DOCUMENT REVIEWS (Agendaris)
+// ─────────────────────────────────────────────
+
+model DocumentReview {
+  id           String       @id @default(cuid())
+  documentId   String       @map("document_id")
+  reviewedById String       @map("reviewed_by")
+  reviewNote   String?      @map("review_note")
+  reviewStatus ReviewStatus @map("review_status")
+  reviewedAt   DateTime     @default(now()) @map("reviewed_at")
+
+  // Relations
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  reviewedBy  User     @relation(fields: [reviewedById], references: [id])
+
+  @@index([documentId])
+  @@map("document_reviews")
+}
+
+// ─────────────────────────────────────────────
+//  DIRECTOR DECISIONS
+// ─────────────────────────────────────────────
+
+model DirectorDecision {
+  id           String       @id @default(cuid())
+  documentId   String       @map("document_id")
+  directorId   String       @map("director_id")
+  decisionType DecisionType @map("decision_type")
+  decisionNote String?      @map("decision_note")
+  decidedAt    DateTime     @default(now()) @map("decided_at")
+
+  // Relations
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  director  User     @relation(fields: [directorId], references: [id])
+
+  @@index([documentId])
+  @@map("director_decisions")
+}
+
+// ─────────────────────────────────────────────
+//  HANDOVER LOGS
+// ─────────────────────────────────────────────
+
+model HandoverLog {
+  id                 String        @id @default(cuid())
+  documentId         String        @map("document_id")
+  staffId            String        @map("staff_id")
+  agendarisId        String        @map("agendaris_id")
+  handoverTime       DateTime      @default(now()) @map("handover_time")
+  confirmationStatus HandoverStatus @default(MENUNGGU) @map("confirmation_status")
+  confirmedAt        DateTime?     @map("confirmed_at")
+  notes              String?
+
+  // Relations
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  staff     User     @relation(fields: [staffId], references: [id])
+
+  @@index([documentId])
+  @@map("handover_logs")
+}
+
+// ─────────────────────────────────────────────
+//  ARCHIVES
+// ─────────────────────────────────────────────
+
+model Archive {
+  id             String   @id @default(cuid())
+  documentId     String   @unique @map("document_id")
+  archivedById   String   @map("archived_by")
+  serverLocation String?  @map("server_location")
+  archivedAt     DateTime @default(now()) @map("archived_at")
+  notes          String?
+
+  // Relations
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  archivedBy  User     @relation(fields: [archivedById], references: [id])
+
+  @@index([documentId])
+  @@map("archives")
+}
+
+// ─────────────────────────────────────────────
+//  AUDIT LOGS
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  documentId  String?  @map("document_id")
+  action      String
+  description String?
+  metadata    Json?
+  ipAddress   String?  @map("ip_address")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id])
+  document  Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([documentId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────
+//  STATUS TIMELINE (Tracking)
+// ─────────────────────────────────────────────
+
+model StatusTimeline {
+  id          String         @id @default(cuid())
+  documentId  String         @map("document_id")
+  fromStatus  DocumentStatus? @map("from_status")
+  toStatus    DocumentStatus @map("to_status")
+  changedBy   String         @map("changed_by")
+  notes       String?
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  // Relations
+  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("status_timeline")
+}
