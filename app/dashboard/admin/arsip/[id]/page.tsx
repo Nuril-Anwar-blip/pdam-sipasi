@@ -71,12 +71,12 @@ export default async function AdminArsipDetail({ params }: Params) {
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <InfoRow icon={FileText}  label="Nomor Surat"   value={doc.nomorSurat} mono />
+              <InfoRow icon={FileText} label="Nomor Surat" value={doc.nomorSurat} mono />
               <InfoRow icon={Calendar} label="Tanggal Surat"
                 value={format(new Date(doc.tanggalSurat), "dd MMMM yyyy", { locale: localeId })} />
-              <InfoRow icon={User}     label="Pembuat"
+              <InfoRow icon={User} label="Pembuat"
                 value={`${doc.createdBy.name} (${doc.createdBy.divisi ?? "-"})`} />
-              <InfoRow icon={User}     label="Email" value={doc.createdBy.email} />
+              <InfoRow icon={User} label="Email" value={doc.createdBy.email} />
             </div>
 
             {doc.deskripsi && (
@@ -126,8 +126,7 @@ export default async function AdminArsipDetail({ params }: Params) {
               )}
             </div>
             {scanFiles.length === 0 ? (
-              <p className="text-sm text-red-500 font-medium">
-                ⚠ Belum ada file scan final. Pastikan Staff sudah mengupload scan.
+              <p className="text-sm text-red-500 font-medium">Belum ada file scan final. Pastikan Staff sudah mengupload scan.
               </p>
             ) : (
               <div className="space-y-2">
@@ -199,7 +198,7 @@ function FileRow({ file, highlight }: {
         </p>
       </div>
       <a href={file.filePath} target="_blank" rel="noreferrer"
-         className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
         <Download className="w-4 h-4" />
       </a>
     </div>

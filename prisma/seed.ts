@@ -1,5 +1,8 @@
 // prisma/seed.ts
-import { PrismaClient, UserRole } from "@prisma/client";
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -9,7 +12,7 @@ async function main() {
 
   const hash = (pw: string) => bcrypt.hashSync(pw, 12);
 
-  // Hapus data lama (opsional di dev)
+  // Hapus data lama
   await prisma.auditLog.deleteMany();
   await prisma.statusTimeline.deleteMany();
   await prisma.archive.deleteMany();
@@ -20,14 +23,12 @@ async function main() {
   await prisma.document.deleteMany();
   await prisma.user.deleteMany();
 
-  // ── Users ──────────────────────────────────────────────
-
   const admin = await prisma.user.create({
     data: {
       name: "Super Admin",
       email: "admin@pdam.go.id",
       passwordHash: hash("Admin@12345"),
-      role: UserRole.ADMIN,
+      role: "ADMIN",
       divisi: "IT / Sistem Informasi",
     },
   });
@@ -37,7 +38,7 @@ async function main() {
       name: "Budi Santoso",
       email: "staff@pdam.go.id",
       passwordHash: hash("Staff@12345"),
-      role: UserRole.STAFF,
+      role: "STAFF",
       divisi: "Administrasi Umum",
     },
   });
@@ -47,7 +48,7 @@ async function main() {
       name: "Sari Dewi",
       email: "agendaris@pdam.go.id",
       passwordHash: hash("Agendaris@12345"),
-      role: UserRole.AGENDARIS,
+      role: "AGENDARIS",
       divisi: "Sekretariat",
     },
   });
@@ -57,7 +58,7 @@ async function main() {
       name: "Ir. H. Ahmad Subagyo",
       email: "direktur@pdam.go.id",
       passwordHash: hash("Direktur@12345"),
-      role: UserRole.DIREKTUR,
+      role: "DIREKTUR",
       divisi: "Direksi",
     },
   });
@@ -69,14 +70,11 @@ async function main() {
     direktur: direktur.email,
   });
 
-  // ── Sample Document ────────────────────────────────────
-
   const doc = await prisma.document.create({
     data: {
       nomorSurat: "001/ADM/PDAM/2025",
       perihal: "Permohonan Pengadaan Peralatan Kantor",
-      deskripsi:
-        "Surat permohonan pengadaan komputer, printer, dan ATK untuk kebutuhan operasional Q1 2025.",
+      deskripsi: "Surat permohonan pengadaan komputer, printer, dan ATK untuk kebutuhan operasional Q1 2025.",
       tujuan: "Direktur Utama PDAM Kabupaten Bandung",
       tanggalSurat: new Date("2025-01-15"),
       currentStatus: "DRAFT",

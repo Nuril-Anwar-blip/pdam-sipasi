@@ -6,7 +6,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ─────────────────────────────────────────────
@@ -14,7 +13,7 @@ datasource db {
 // ─────────────────────────────────────────────
 
 enum UserRole {
-  STAFF        // Admin Bagian
+  STAFF // Admin Bagian
   AGENDARIS
   DIREKTUR
   ADMIN
@@ -61,18 +60,18 @@ enum HandoverStatus {
 // ─────────────────────────────────────────────
 
 model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  passwordHash  String   @map("password_hash")
-  role          UserRole
-  divisi        String?
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole
+  divisi       String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  documentsCreated  Document[]        @relation("DocumentCreator")
+  documentsCreated  Document[]         @relation("DocumentCreator")
   documentReviews   DocumentReview[]
   directorDecisions DirectorDecision[]
   handoverLogs      HandoverLog[]
@@ -90,27 +89,27 @@ model User {
 // ─────────────────────────────────────────────
 
 model Document {
-  id             String         @id @default(cuid())
-  nomorSurat     String         @unique @map("nomor_surat")
-  perihal        String
-  deskripsi      String?
-  tujuan         String?
-  tanggalSurat   DateTime       @map("tanggal_surat")
-  currentStatus  DocumentStatus @default(DRAFT) @map("current_status")
-  currentHolder  String?        @map("current_holder")
-  createdById    String         @map("created_by")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
+  id            String         @id @default(cuid())
+  nomorSurat    String         @unique @map("nomor_surat")
+  perihal       String
+  deskripsi     String?
+  tujuan        String?
+  tanggalSurat  DateTime       @map("tanggal_surat")
+  currentStatus DocumentStatus @default(DRAFT) @map("current_status")
+  currentHolder String?        @map("current_holder")
+  createdById   String         @map("created_by")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
 
   // Relations
-  createdBy         User               @relation("DocumentCreator", fields: [createdById], references: [id])
-  files             DocumentFile[]
-  reviews           DocumentReview[]
-  decisions         DirectorDecision[]
-  handoverLogs      HandoverLog[]
-  archive           Archive?
-  auditLogs         AuditLog[]
-  statusTimeline    StatusTimeline[]
+  createdBy      User               @relation("DocumentCreator", fields: [createdById], references: [id])
+  files          DocumentFile[]
+  reviews        DocumentReview[]
+  decisions      DirectorDecision[]
+  handoverLogs   HandoverLog[]
+  archive        Archive?
+  auditLogs      AuditLog[]
+  statusTimeline StatusTimeline[]
 
   @@index([currentStatus])
   @@index([createdById])
@@ -123,19 +122,19 @@ model Document {
 // ─────────────────────────────────────────────
 
 model DocumentFile {
-  id          String   @id @default(cuid())
-  documentId  String   @map("document_id")
-  fileType    FileType @map("file_type")
-  fileName    String   @map("file_name")
-  filePath    String   @map("file_path")
-  fileSize    Int?     @map("file_size")
-  mimeType    String?  @map("mime_type")
-  uploadedById String  @map("uploaded_by")
-  uploadedAt  DateTime @default(now()) @map("uploaded_at")
+  id           String   @id @default(cuid())
+  documentId   String   @map("document_id")
+  fileType     FileType @map("file_type")
+  fileName     String   @map("file_name")
+  filePath     String   @map("file_path")
+  fileSize     Int?     @map("file_size")
+  mimeType     String?  @map("mime_type")
+  uploadedById String   @map("uploaded_by")
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
 
   // Relations
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  uploadedBy  User     @relation(fields: [uploadedById], references: [id])
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation(fields: [uploadedById], references: [id])
 
   @@index([documentId])
   @@index([fileType])
@@ -155,8 +154,8 @@ model DocumentReview {
   reviewedAt   DateTime     @default(now()) @map("reviewed_at")
 
   // Relations
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  reviewedBy  User     @relation(fields: [reviewedById], references: [id])
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  reviewedBy User     @relation(fields: [reviewedById], references: [id])
 
   @@index([documentId])
   @@map("document_reviews")
@@ -175,8 +174,8 @@ model DirectorDecision {
   decidedAt    DateTime     @default(now()) @map("decided_at")
 
   // Relations
-  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  director  User     @relation(fields: [directorId], references: [id])
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  director User     @relation(fields: [directorId], references: [id])
 
   @@index([documentId])
   @@map("director_decisions")
@@ -187,18 +186,18 @@ model DirectorDecision {
 // ─────────────────────────────────────────────
 
 model HandoverLog {
-  id                 String        @id @default(cuid())
-  documentId         String        @map("document_id")
-  staffId            String        @map("staff_id")
-  agendarisId        String        @map("agendaris_id")
-  handoverTime       DateTime      @default(now()) @map("handover_time")
+  id                 String         @id @default(cuid())
+  documentId         String         @map("document_id")
+  staffId            String         @map("staff_id")
+  agendarisId        String         @map("agendaris_id")
+  handoverTime       DateTime       @default(now()) @map("handover_time")
   confirmationStatus HandoverStatus @default(MENUNGGU) @map("confirmation_status")
-  confirmedAt        DateTime?     @map("confirmed_at")
+  confirmedAt        DateTime?      @map("confirmed_at")
   notes              String?
 
   // Relations
-  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  staff     User     @relation(fields: [staffId], references: [id])
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  staff    User     @relation(fields: [staffId], references: [id])
 
   @@index([documentId])
   @@map("handover_logs")
@@ -217,8 +216,8 @@ model Archive {
   notes          String?
 
   // Relations
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  archivedBy  User     @relation(fields: [archivedById], references: [id])
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  archivedBy User     @relation(fields: [archivedById], references: [id])
 
   @@index([documentId])
   @@map("archives")
@@ -239,8 +238,8 @@ model AuditLog {
   createdAt   DateTime @default(now()) @map("created_at")
 
   // Relations
-  user      User      @relation(fields: [userId], references: [id])
-  document  Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  user     User      @relation(fields: [userId], references: [id])
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([documentId])
@@ -253,16 +252,16 @@ model AuditLog {
 // ─────────────────────────────────────────────
 
 model StatusTimeline {
-  id          String         @id @default(cuid())
-  documentId  String         @map("document_id")
-  fromStatus  DocumentStatus? @map("from_status")
-  toStatus    DocumentStatus @map("to_status")
-  changedBy   String         @map("changed_by")
-  notes       String?
-  createdAt   DateTime       @default(now()) @map("created_at")
+  id         String          @id @default(cuid())
+  documentId String          @map("document_id")
+  fromStatus DocumentStatus? @map("from_status")
+  toStatus   DocumentStatus  @map("to_status")
+  changedBy  String          @map("changed_by")
+  notes      String?
+  createdAt  DateTime        @default(now()) @map("created_at")
 
   // Relations
-  document  Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([documentId])
   @@map("status_timeline")
