@@ -59,14 +59,14 @@ export default function BuatDokumenPage() {
     }
   };
 
-  const handleSubmitToAgendaris = async () => {
+  const handleSubmitToAdmin = async () => {
     if (!createdDocId) return;
     setSubmitting(true);
     try {
       const res = await fetch(`/api/documents/${createdDocId}/submit`, { method: "POST" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Gagal mengirim.");
-      toast.success("Dokumen berhasil dikirim ke Agendaris!");
+      toast.success("Dokumen berhasil dikirim ke Admin!");
       router.push("/dashboard/staff/dokumen");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
@@ -108,7 +108,7 @@ export default function BuatDokumenPage() {
         <div className="h-px w-6 bg-gray-300" />
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
           <span className="w-4 h-4 rounded-full bg-current/20 flex items-center justify-center text-[10px]">3</span>
-          Kirim ke Agendaris
+          Kirim ke Admin
         </div>
       </div>
 
@@ -209,7 +209,7 @@ export default function BuatDokumenPage() {
       {/* Step 3: Submit */}
       {createdDocId && (
         <div className="card p-6 bg-blue-50 border-blue-200">
-          <h2 className="font-semibold text-gray-900 mb-2">Kirim ke Agendaris</h2>
+          <h2 className="font-semibold text-gray-900 mb-2">Kirim ke Admin</h2>
           <p className="text-sm text-gray-600 mb-4">
             Pastikan file draft sudah diupload sebelum mengirim. Dokumen yang sudah dikirim
             tidak dapat diedit hingga dikembalikan untuk revisi.
@@ -219,14 +219,14 @@ export default function BuatDokumenPage() {
               Simpan sebagai Draft
             </Link>
             <button
-              onClick={handleSubmitToAgendaris}
+              onClick={handleSubmitToAdmin}
               disabled={submitting}
               className="btn-primary flex-1 justify-center"
             >
               {submitting ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Mengirim...</>
               ) : (
-                <><Send className="w-4 h-4" /> Kirim ke Agendaris</>
+                <><Send className="w-4 h-4" /> Kirim ke Admin</>
               )}
             </button>
           </div>

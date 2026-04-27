@@ -14,9 +14,10 @@ import { StaffActionPanel } from "@/components/documents/StaffActionPanel";
 import { DECISION_LABELS } from "@/types";
 import { DecisionType } from "@prisma/client";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
-export default async function StaffDocumentDetail({ params }: Params) {
+export default async function StaffDocumentDetail(props: Params) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "STAFF") redirect("/dashboard");
 

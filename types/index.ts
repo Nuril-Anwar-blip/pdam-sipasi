@@ -156,7 +156,7 @@ export interface ArchiveDocumentInput {
 
 export const STATUS_LABELS: Record<DocumentStatus, string> = {
   DRAFT: "Draft",
-  MENUNGGU_REVIEW_AGENDARIS: "Menunggu Review Agendaris",
+  MENUNGGU_REVIEW_AGENDARIS: "Menunggu Review Admin",
   PERLU_REVISI: "Perlu Revisi",
   MENUNGGU_KEPUTUSAN_DIREKTUR: "Menunggu Keputusan Direktur",
   DIPROSES_DIREKTUR: "Diproses Direktur",
@@ -189,7 +189,7 @@ export const DECISION_LABELS: Record<DecisionType, string> = {
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   STAFF: "Admin Bagian / Staff",
-  AGENDARIS: "Agendaris",
+  AGENDARIS: "Agendaris (Diusangkan)",
   DIREKTUR: "Direktur Utama",
   ADMIN: "Administrator",
 };

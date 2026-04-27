@@ -23,12 +23,7 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { label: "Dokumen Saya", href: "/dashboard/staff/dokumen", icon: ClipboardList },
     { label: "Upload Scan Final", href: "/dashboard/staff/scan-final", icon: Send },
   ],
-  AGENDARIS: [
-    { label: "Dashboard", href: "/dashboard/agendaris", icon: LayoutDashboard },
-    { label: "Inbox Masuk", href: "/dashboard/agendaris/inbox", icon: ClipboardList },
-    { label: "Review Dokumen", href: "/dashboard/agendaris/review", icon: FileSearch },
-    { label: "Semua Dokumen", href: "/dashboard/agendaris/dokumen", icon: BookOpen },
-  ],
+  AGENDARIS: [], // Role ini disembunyikan/dilenyapkan
   DIREKTUR: [
     { label: "Dashboard", href: "/dashboard/direktur", icon: LayoutDashboard },
     { label: "Menunggu Keputusan", href: "/dashboard/direktur/antrian", icon: ClipboardList },
@@ -37,8 +32,10 @@ const navByRole: Record<UserRole, NavItem[]> = {
   ],
   ADMIN: [
     { label: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
-    { label: "Semua Dokumen", href: "/dashboard/admin/dokumen", icon: ClipboardList },
+    { label: "Inbox Masuk", href: "/dashboard/admin/inbox", icon: ClipboardList },
+    { label: "Review Dokumen", href: "/dashboard/admin/review", icon: FileSearch },
     { label: "Antrian Arsip", href: "/dashboard/admin/arsip", icon: Archive },
+    { label: "Semua Dokumen", href: "/dashboard/admin/dokumen", icon: BookOpen },
     { label: "Kelola Pengguna", href: "/dashboard/admin/users", icon: Users },
     { label: "Audit Log", href: "/dashboard/admin/audit", icon: BookOpen },
   ],

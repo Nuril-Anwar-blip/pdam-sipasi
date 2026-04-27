@@ -4,14 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, successResponse, errorResponse, getClientIp } from "@/lib/auth-helpers";
 import { createAuditLog, createStatusTimeline } from "@/lib/audit";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 // POST /api/documents/[id]/notify-pickup
-// Agendaris memberitahu Staff untuk mengambil surat fisik
-export async function POST(req: NextRequest, { params }: Params) {
+// Admin memberitahu Staff untuk mengambil surat fisik
+export async function POST(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireAuth(req, async (user, request) => {
-    if (user.role !== "AGENDARIS") {
-      return errorResponse("Hanya Agendaris yang dapat mengirim notifikasi pengambilan.", 403);
+    if (user.role !== "ADMIN") {
+      return errorResponse("Hanya Admin yang dapat mengirim notifikasi pengambilan.", 403);
     }
 
     try {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           data: {
             documentId: doc.id,
             staffId: doc.createdById,
-            agendarisId: user.id,
+            agendarisId: user.id, // we keep the DB column name as is since we didn't migrate it
             confirmationStatus: "MENUNGGU",
           },
         }),
@@ -54,14 +55,14 @@ export async function POST(req: NextRequest, { params }: Params) {
         fromStatus: prevStatus,
         toStatus: "MENUNGGU_PENGAMBILAN_STAFF",
         changedBy: user.id,
-        notes: `Agendaris menghubungi Staff ${doc.createdBy.name} untuk pengambilan surat fisik`,
+        notes: `Admin menghubungi Staff ${doc.createdBy.name} untuk pengambilan surat fisik`,
       });
 
       await createAuditLog({
         userId: user.id,
         documentId: doc.id,
         action: "NOTIFY_PICKUP",
-        description: `Agendaris mengirim notifikasi pengambilan ke Staff: ${doc.createdBy.name}`,
+        description: `Admin mengirim notifikasi pengambilan ke Staff: ${doc.createdBy.name}`,
         ipAddress: getClientIp(request),
       });
 
@@ -78,7 +79,8 @@ export async function POST(req: NextRequest, { params }: Params) {
 
 // POST /api/documents/[id]/confirm-pickup
 // Staff konfirmasi sudah mengambil surat & siap scan
-export async function PUT(req: NextRequest, { params }: Params) {
+export async function PUT(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireAuth(req, async (user, request) => {
     if (user.role !== "STAFF") {
       return errorResponse("Hanya Staff yang dapat mengkonfirmasi pengambilan.", 403);

@@ -90,7 +90,7 @@ export function DirectorDecisionPanel({ doc }: { doc: DocProps }) {
         <textarea
           className="form-input resize-none"
           rows={4}
-          placeholder="Tuliskan catatan, instruksi, atau disposisi untuk Agendaris dan Staff..."
+          placeholder="Tuliskan catatan, instruksi, atau disposisi untuk Sekretariat/Admin dan Staff..."
           value={note}
           onChange={(e) => setNote(e.target.value)}
           disabled={loading}
@@ -104,7 +104,7 @@ export function DirectorDecisionPanel({ doc }: { doc: DocProps }) {
       >
         {loading
           ? <><Loader2 className="w-4 h-4 animate-spin" /> Menyimpan Keputusan...</>
-          : "Simpan & Kembalikan ke Agendaris"}
+          : "Simpan & Kembalikan ke Admin"}
       </button>
     </div>
   );

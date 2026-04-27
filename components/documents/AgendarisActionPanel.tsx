@@ -28,7 +28,7 @@ export function AgendarisActionPanel({ doc }: { doc: DocProps }) {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Gagal.");
       toast.success(json.message ?? "Berhasil!");
-      router.push("/dashboard/agendaris/inbox");
+      router.push("/dashboard/admin/inbox");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
     } finally {
@@ -137,6 +137,43 @@ export function AgendarisActionPanel({ doc }: { doc: DocProps }) {
           {loading
             ? <><Loader2 className="w-4 h-4 animate-spin" /> Mengirim...</>
             : <><Bell className="w-4 h-4" /> Kirim Notifikasi ke Staff</>}
+        </button>
+      </div>
+    );
+  }
+
+  // Pemantauan dokumen yang ada di Direktur
+  if (["MENUNGGU_KEPUTUSAN_DIREKTUR", "DIPROSES_DIREKTUR"].includes(doc.currentStatus)) {
+    return (
+      <div className="card p-5 bg-yellow-50 border-yellow-200 space-y-3">
+        <h3 className="font-semibold text-yellow-900">Pantauan Direktur</h3>
+        <p className="text-sm text-yellow-800">
+          Dokumen saat ini berada di meja Direktur. 
+          {doc.currentStatus === "DIPROSES_DIREKTUR" && (
+            <span className="block mt-1 font-semibold text-yellow-900 border-l-2 border-yellow-500 pl-2">
+              Direktur sudah membuka/membaca tiket ini, menunggu keputusannya.
+            </span>
+          )}
+        </p>
+        <button
+          onClick={async () => {
+            setLoading(true);
+            try {
+              const res = await fetch(`/api/documents/${doc.id}/remind-director`, { method: "POST" });
+              const json = await res.json();
+              if (!res.ok) throw new Error(json.error ?? "Gagal");
+              toast.success("Pengingat berhasil dikirim ke Direktur!");
+              router.refresh();
+            } catch (e: any) {
+              toast.error(e.message);
+            } finally {
+              setLoading(false);
+            }
+          }}
+          disabled={loading}
+          className="btn-primary w-full justify-center bg-yellow-600 hover:bg-yellow-700 text-white"
+        >
+          {loading ? "Mengirim..." : "Ingatkan Direktur Sekarang"}
         </button>
       </div>
     );

@@ -13,9 +13,10 @@ import { AgendarisActionPanel } from "@/components/documents/AgendarisActionPane
 import { DECISION_LABELS } from "@/types";
 import { DecisionType } from "@prisma/client";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
-export default async function AgendarisDocumentDetail({ params }: Params) {
+export default async function AgendarisDocumentDetail(props: Params) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "AGENDARIS") redirect("/dashboard");
 

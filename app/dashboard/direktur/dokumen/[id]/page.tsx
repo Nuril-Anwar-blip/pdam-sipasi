@@ -13,9 +13,10 @@ import { DirectorDecisionPanel } from "@/components/documents/DirectorDecisionPa
 import { DECISION_LABELS } from "@/types";
 import { DecisionType } from "@prisma/client";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
-export default async function DirektuurDocumentDetail({ params }: Params) {
+export default async function DirektuurDocumentDetail(props: Params) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "DIREKTUR") redirect("/dashboard");
 
@@ -42,6 +43,16 @@ export default async function DirektuurDocumentDetail({ params }: Params) {
   });
 
   if (!doc) notFound();
+
+  // Otomatis ubah status saat dibuka pertama kali oleh Direktur
+  if (doc.currentStatus === "MENUNGGU_KEPUTUSAN_DIREKTUR") {
+    await prisma.document.update({
+      where: { id: doc.id },
+      data: { currentStatus: "DIPROSES_DIREKTUR" },
+    });
+    // @ts-ignore - Update instance status so UI reflects the current state
+    doc.currentStatus = "DIPROSES_DIREKTUR";
+  }
 
   // Direktur hanya bisa proses dokumen yang menunggu keputusannya
   const canDecide = ["MENUNGGU_KEPUTUSAN_DIREKTUR", "DIPROSES_DIREKTUR"].includes(doc.currentStatus);

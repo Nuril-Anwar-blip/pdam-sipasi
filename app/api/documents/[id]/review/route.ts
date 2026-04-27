@@ -5,14 +5,15 @@ import { requireAuth, successResponse, errorResponse, getClientIp } from "@/lib/
 import { createAuditLog, createStatusTimeline } from "@/lib/audit";
 import { reviewDocumentSchema } from "@/lib/validations";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 // POST /api/documents/[id]/review
-// Agendaris: teruskan ke Direktur atau kembalikan ke Staff
-export async function POST(req: NextRequest, { params }: Params) {
+// Admin: teruskan ke Direktur atau kembalikan ke Staff
+export async function POST(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireAuth(req, async (user, request) => {
-    if (user.role !== "AGENDARIS") {
-      return errorResponse("Hanya Agendaris yang dapat melakukan review dokumen.", 403);
+    if (user.role !== "ADMIN") {
+      return errorResponse("Hanya Admin yang dapat melakukan review dokumen.", 403);
     }
 
     try {
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       if (reviewStatus === "DITERUSKAN") {
         newStatus = "MENUNGGU_KEPUTUSAN_DIREKTUR";
         newHolder = "DIREKTUR";
-        timelineNote = "Dokumen diteruskan ke Direktur Utama oleh Agendaris";
+        timelineNote = "Dokumen diteruskan ke Direktur Utama oleh Admin";
       } else {
         newStatus = "PERLU_REVISI";
         newHolder = doc.createdById;
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         userId: user.id,
         documentId: doc.id,
         action: `REVIEW_${reviewStatus}`,
-        description: `Agendaris ${reviewStatus === "DITERUSKAN" ? "meneruskan" : "mengembalikan"} dokumen ${doc.nomorSurat}`,
+        description: `Admin ${reviewStatus === "DITERUSKAN" ? "meneruskan" : "mengembalikan"} dokumen ${doc.nomorSurat}`,
         metadata: { reviewStatus, reviewNote },
         ipAddress: getClientIp(request),
       });

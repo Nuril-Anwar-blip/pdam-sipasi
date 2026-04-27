@@ -10,12 +10,14 @@ import { ArrowLeft, FileText, Download, Calendar, User } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { StatusTimeline } from "@/components/documents/StatusTimeline";
 import { AdminArchivePanel } from "@/components/documents/AdminArchivePanel";
+import { AgendarisActionPanel } from "@/components/documents/AgendarisActionPanel";
 import { DECISION_LABELS } from "@/types";
 import { DecisionType } from "@prisma/client";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
-export default async function AdminArsipDetail({ params }: Params) {
+export default async function AdminArsipDetail(props: Params) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") redirect("/dashboard");
 
@@ -136,6 +138,9 @@ export default async function AdminArsipDetail({ params }: Params) {
               </div>
             )}
           </div>
+
+          {/* Review action */}
+          <AgendarisActionPanel doc={doc} />
 
           {/* Archive action */}
           {!doc.archive ? (

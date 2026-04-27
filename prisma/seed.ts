@@ -3,12 +3,17 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+const connectionString = `${process.env.DIRECT_URL}`;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("🌱 Seeding database...");
+  console.log("Seeding database...");
 
   const hash = (pw: string) => bcrypt.hashSync(pw, 12);
 
@@ -63,7 +68,7 @@ async function main() {
     },
   });
 
-  console.log("✅ Users created:", {
+  console.log("Users created:", {
     admin: admin.email,
     staff: staff1.email,
     agendaris: agendaris.email,
@@ -92,7 +97,7 @@ async function main() {
     },
   });
 
-  console.log("✅ Sample document created:", doc.nomorSurat);
+  console.log("Sample document created:", doc.nomorSurat);
   console.log("\n📋 Default Credentials:");
   console.log("  Admin     → admin@pdam.go.id     / Admin@12345");
   console.log("  Staff     → staff@pdam.go.id     / Staff@12345");
@@ -102,7 +107,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error("❌ Seed error:", e);
+    console.error("Seed error:", e);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

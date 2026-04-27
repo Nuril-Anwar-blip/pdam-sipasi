@@ -34,18 +34,18 @@ export function StaffActionPanel({ doc }: { doc: DocProps }) {
       <div className="card p-5 bg-blue-50 border-blue-200">
         <p className="text-sm text-blue-800 font-medium mb-3">
           {doc.currentStatus === "PERLU_REVISI"
-            ? "Perbaiki dokumen, lalu kirim ulang ke Agendaris."
-            : "Dokumen siap dikirim ke Agendaris untuk direview."}
+            ? "Perbaiki dokumen, lalu kirim ulang ke Admin."
+            : "Dokumen siap dikirim ke Admin untuk divalidasi."}
         </p>
         <button
           onClick={() => doAction(`/api/documents/${doc.id}/submit`, "POST",
-            "Dokumen berhasil dikirim ke Agendaris!")}
+            "Dokumen berhasil dikirim ke Admin!")}
           disabled={loading}
           className="btn-primary w-full justify-center"
         >
           {loading
             ? <><Loader2 className="w-4 h-4 animate-spin" /> Mengirim...</>
-            : <><Send className="w-4 h-4" /> Kirim ke Agendaris</>}
+            : <><Send className="w-4 h-4" /> Kirim ke Admin</>}
         </button>
       </div>
     );
@@ -55,7 +55,7 @@ export function StaffActionPanel({ doc }: { doc: DocProps }) {
     return (
       <div className="card p-5 bg-orange-50 border-orange-200">
         <p className="text-sm text-orange-800 font-medium mb-1">
-          Surat fisik siap diambil di ruang Agendaris.
+          Surat fisik siap diambil di ruang Sekretariat / Admin.
         </p>
         <p className="text-xs text-orange-600 mb-3">
           Konfirmasi setelah Anda mengambil surat fisik, lalu lakukan scan dokumen.
