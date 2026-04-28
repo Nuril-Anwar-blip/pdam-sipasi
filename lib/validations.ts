@@ -62,6 +62,7 @@ export const reviewDocumentSchema = z.object({
 export const directorDecisionSchema = z.object({
   decisionType: z.enum(["DISETUJUI", "DITOLAK", "REVISI", "DISPOSISI"]),
   decisionNote: z.string().max(2000).optional(),
+  autoSign: z.boolean().optional(),
 });
 
 // ─── Archive (Admin) ─────────────────────────────────────────
