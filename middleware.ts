@@ -15,21 +15,18 @@ export default withAuth(
 
     // Role Guards
     const routeAccess: Record<string, string[]> = {
-      "/dashboard/admin": ["ADMIN"],
-      "/dashboard/agendaris": ["AGENDARIS", "ADMIN"],
-      "/dashboard/direktur": ["DIREKTUR", "ADMIN"],
-      "/dashboard/staff": ["STAFF", "ADMIN"],
+      "/dashboard/admin-staff": ["ADMIN_STAFF"],
+      "/dashboard/agendaris": ["AGENDARIS"],
+      "/dashboard/direktur": ["DIREKTUR"],
     };
 
     for (const [route, allowedRoles] of Object.entries(routeAccess)) {
       if (pathname.startsWith(route) && !allowedRoles.includes(role)) {
         //Redirect ke dashboard yang sesuai
-        const dashboardMap:
-          Record<string, string> = {
-          STAFF: "/dashboard/staff",
+        const dashboardMap: Record<string, string> = {
+          ADMIN_STAFF: "/dashboard/admin-staff",
           AGENDARIS: "/dashboard/agendaris",
           DIREKTUR: "/dashboard/direktur",
-          ADMIN: "/dashboard/admin",
         };
         return NextResponse.redirect(
           new URL(dashboardMap[role] ?? "/login", req.url)

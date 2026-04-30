@@ -6,11 +6,12 @@ import { createAuditLog, createStatusTimeline } from "@/lib/audit";
 import { validateFile, saveUploadedFile } from "@/lib/upload";
 import { FileType } from "@prisma/client";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 // POST /api/documents/[id]/upload
 // Upload file: draft (Staff) atau final scan (Staff setelah keputusan)
-export async function POST(req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireAuth(req, async (user, request) => {
     try {
       const doc = await prisma.document.findUnique({ where: { id: params.id } });

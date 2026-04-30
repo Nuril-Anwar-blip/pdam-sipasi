@@ -4,11 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth, successResponse, errorResponse, getClientIp } from "@/lib/auth-helpers";
 import { createAuditLog, createStatusTimeline } from "@/lib/audit";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 // POST /api/documents/[id]/submit
 // Staff mengirimkan dokumen ke Agendaris
-export async function POST(req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireAuth(req, async (user, request) => {
     if (user.role !== "STAFF") {
       return errorResponse("Hanya Staff yang dapat mengirim dokumen ke Agendaris.", 403);

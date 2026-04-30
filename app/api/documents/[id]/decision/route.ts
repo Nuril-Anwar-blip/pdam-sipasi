@@ -5,11 +5,12 @@ import { requireAuth, successResponse, errorResponse, getClientIp } from "@/lib/
 import { createAuditLog, createStatusTimeline } from "@/lib/audit";
 import { directorDecisionSchema } from "@/lib/validations";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 // POST /api/documents/[id]/decision
 // Direktur memberikan keputusan
-export async function POST(req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireAuth(req, async (user, request) => {
     if (user.role !== "DIREKTUR") {
       return errorResponse("Hanya Direktur Utama yang dapat memberikan keputusan.", 403);

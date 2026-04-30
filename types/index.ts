@@ -7,10 +7,9 @@ import {
   DecisionType,
   FileType,
   ReviewStatus,
-  HandoverStatus,
 } from "@prisma/client";
 
-export type { UserRole, DocumentStatus, DecisionType, FileType, ReviewStatus, HandoverStatus };
+export type { UserRole, DocumentStatus, DecisionType, FileType, ReviewStatus };
 
 // ─────────────────────────────────────────────
 //  USER TYPES
@@ -36,7 +35,7 @@ export interface DocumentListItem {
   id: string;
   nomorSurat: string;
   perihal: string;
-  tujuan: string | null;
+  asalSurat: string | null;
   tanggalSurat: Date | string;
   currentStatus: DocumentStatus;
   createdAt: Date | string;
@@ -48,13 +47,14 @@ export interface DocumentListItem {
 }
 
 export interface DocumentDetail extends DocumentListItem {
-  deskripsi: string | null;
-  currentHolder: string | null;
   files: DocumentFileItem[];
   reviews: ReviewItem[];
   decisions: DecisionItem[];
   statusTimeline: TimelineItem[];
   archive: ArchiveItem | null;
+  jadwalDirekturs?: JadwalItem[];
+  disposisi?: DisposisiItem[];
+  undangan?: UndanganItem | null;
 }
 
 export interface DocumentFileItem {
@@ -80,6 +80,9 @@ export interface DecisionItem {
   id: string;
   decisionType: DecisionType;
   decisionNote: string | null;
+  tempat: string | null;
+  tanggalTandaTangan: Date | string | null;
+  parafDirektur: string | null;
   decidedAt: Date | string;
   director: { name: string };
 }
@@ -88,7 +91,7 @@ export interface TimelineItem {
   id: string;
   fromStatus: DocumentStatus | null;
   toStatus: DocumentStatus;
-  changedBy: string;
+  changedBy: string; // Changed back to just string or object
   notes: string | null;
   createdAt: Date | string;
 }
@@ -98,6 +101,39 @@ export interface ArchiveItem {
   serverLocation: string | null;
   archivedAt: Date | string;
   archivedBy: { name: string };
+  bulan: number;
+  tahun: number;
+}
+
+export interface JadwalItem {
+  id: string;
+  jadwalKirim: Date | string;
+  isUrgen: boolean;
+  isSent: boolean;
+  sentAt: Date | string | null;
+}
+
+export interface DisposisiItem {
+  id: string;
+  instruksi: string | null;
+  keterangan: string | null;
+  tempat: string | null;
+  tanggalTandaTangan: Date | string | null;
+  parafDariId: string | null;
+  dari: { name: string };
+  ke: { name: string };
+}
+
+export interface UndanganItem {
+  id: string;
+  hari: string;
+  tanggal: Date | string;
+  jam: string;
+  tempat: string;
+  media: string;
+  dresscode: string | null;
+  catatanLain: string | null;
+  deadline: Date | string;
 }
 
 // ─────────────────────────────────────────────
@@ -127,8 +163,7 @@ export interface PaginatedResponse<T> {
 export interface CreateDocumentInput {
   nomorSurat: string;
   perihal: string;
-  deskripsi?: string;
-  tujuan?: string;
+  asalSurat?: string;
   tanggalSurat: string; // ISO date string
 }
 
@@ -142,6 +177,7 @@ export interface DirectorDecisionInput {
   documentId: string;
   decisionType: DecisionType;
   decisionNote?: string;
+  tempat?: string;
 }
 
 export interface ArchiveDocumentInput {
@@ -156,27 +192,25 @@ export interface ArchiveDocumentInput {
 
 export const STATUS_LABELS: Record<DocumentStatus, string> = {
   DRAFT: "Draft",
-  MENUNGGU_REVIEW_AGENDARIS: "Menunggu Review Admin",
+  MENUNGGU_REVIEW_ADMIN: "Menunggu Review Agendaris",
   PERLU_REVISI: "Perlu Revisi",
+  DIJADWALKAN_KE_DIREKTUR: "Dijadwalkan Ke Direktur",
   MENUNGGU_KEPUTUSAN_DIREKTUR: "Menunggu Keputusan Direktur",
   DIPROSES_DIREKTUR: "Diproses Direktur",
   KEPUTUSAN_DIREKTUR_SELESAI: "Keputusan Direktur Selesai",
-  MENUNGGU_PENGAMBILAN_STAFF: "Menunggu Pengambilan Staff",
-  MENUNGGU_SCAN_FINAL: "Menunggu Scan Final",
   MENUNGGU_ARSIP_ADMIN: "Menunggu Arsip Admin",
   ARSIP_FINAL_TERSIMPAN: "Arsip Final Tersimpan",
 };
 
 export const STATUS_COLORS: Record<DocumentStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-700",
-  MENUNGGU_REVIEW_AGENDARIS: "bg-yellow-100 text-yellow-800",
+  MENUNGGU_REVIEW_ADMIN: "bg-yellow-100 text-yellow-800",
   PERLU_REVISI: "bg-red-100 text-red-700",
-  MENUNGGU_KEPUTUSAN_DIREKTUR: "bg-blue-100 text-blue-800",
-  DIPROSES_DIREKTUR: "bg-indigo-100 text-indigo-800",
-  KEPUTUSAN_DIREKTUR_SELESAI: "bg-purple-100 text-purple-800",
-  MENUNGGU_PENGAMBILAN_STAFF: "bg-orange-100 text-orange-800",
-  MENUNGGU_SCAN_FINAL: "bg-cyan-100 text-cyan-800",
-  MENUNGGU_ARSIP_ADMIN: "bg-teal-100 text-teal-800",
+  DIJADWALKAN_KE_DIREKTUR: "bg-blue-100 text-blue-800",
+  MENUNGGU_KEPUTUSAN_DIREKTUR: "bg-indigo-100 text-indigo-800",
+  DIPROSES_DIREKTUR: "bg-purple-100 text-purple-800",
+  KEPUTUSAN_DIREKTUR_SELESAI: "bg-orange-100 text-orange-800",
+  MENUNGGU_ARSIP_ADMIN: "bg-cyan-100 text-cyan-800",
   ARSIP_FINAL_TERSIMPAN: "bg-green-100 text-green-800",
 };
 
@@ -188,8 +222,7 @@ export const DECISION_LABELS: Record<DecisionType, string> = {
 };
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  STAFF: "Admin Bagian / Staff",
-  AGENDARIS: "Agendaris (Diusangkan)",
+  ADMIN_STAFF: "Admin & Staff",
+  AGENDARIS: "Agendaris",
   DIREKTUR: "Direktur Utama",
-  ADMIN: "Administrator",
 };

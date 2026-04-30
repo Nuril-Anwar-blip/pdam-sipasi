@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
 // ─────────────────────────────────────────────
@@ -13,21 +13,19 @@ datasource db {
 // ─────────────────────────────────────────────
 
 enum UserRole {
-  STAFF // Admin Bagian
+  ADMIN_STAFF
   AGENDARIS
   DIREKTUR
-  ADMIN
 }
 
 enum DocumentStatus {
   DRAFT
-  MENUNGGU_REVIEW_AGENDARIS
+  MENUNGGU_REVIEW_ADMIN
   PERLU_REVISI
+  DIJADWALKAN_KE_DIREKTUR
   MENUNGGU_KEPUTUSAN_DIREKTUR
   DIPROSES_DIREKTUR
   KEPUTUSAN_DIREKTUR_SELESAI
-  MENUNGGU_PENGAMBILAN_STAFF
-  MENUNGGU_SCAN_FINAL
   MENUNGGU_ARSIP_ADMIN
   ARSIP_FINAL_TERSIMPAN
 }
@@ -40,7 +38,7 @@ enum DecisionType {
 }
 
 enum FileType {
-  DRAFT
+  SCAN_MASUK
   FINAL_SCAN
   ATTACHMENT
 }
@@ -50,9 +48,14 @@ enum ReviewStatus {
   DIKEMBALIKAN
 }
 
-enum HandoverStatus {
-  MENUNGGU
-  DIKONFIRMASI
+enum SuratType {
+  MASUK
+  KELUAR
+}
+
+enum UndanganMedia {
+  ONLINE
+  OFFLINE
 }
 
 // ─────────────────────────────────────────────
@@ -66,18 +69,28 @@ model User {
   passwordHash String   @map("password_hash")
   role         UserRole
   divisi       String?
+  bagian       String?
   isActive     Boolean  @default(true) @map("is_active")
+  
+  // Tanda tangan & paraf (base64 atau path ke file gambar)
+  signature    String?  // TTD penuh
+  paraf        String?  // Versi kecil TTD
+  
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  documentsCreated  Document[]         @relation("DocumentCreator")
+  suratMasukCreated SuratMasuk[]       @relation("SuratMasukCreator")
   documentReviews   DocumentReview[]
   directorDecisions DirectorDecision[]
-  handoverLogs      HandoverLog[]
   archivesCreated   Archive[]
   auditLogs         AuditLog[]
   uploadedFiles     DocumentFile[]
+  jadwalDirekturs   JadwalDirekturs[]
+  undanganPenerima  UndanganPenerima[]
+  disposisiDari     LembarDisposisi[]  @relation("DisposisiDari")
+  disposisiKe       LembarDisposisi[]  @relation("DisposisiKe")
+  statusTimeline    StatusTimeline[]   @relation("TimelineChangedBy")
 
   @@index([email])
   @@index([role])
@@ -85,36 +98,39 @@ model User {
 }
 
 // ─────────────────────────────────────────────
-//  DOCUMENTS
+//  SURAT MASUK (dokumen utama)
 // ─────────────────────────────────────────────
 
-model Document {
-  id            String         @id @default(cuid())
-  nomorSurat    String         @unique @map("nomor_surat")
-  perihal       String
-  deskripsi     String?
-  tujuan        String?
-  tanggalSurat  DateTime       @map("tanggal_surat")
-  currentStatus DocumentStatus @default(DRAFT) @map("current_status")
-  currentHolder String?        @map("current_holder")
-  createdById   String         @map("created_by")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+model SuratMasuk {
+  id              String         @id @default(cuid())
+  nomorSurat      String         @unique @map("nomor_surat")
+  nomorAgenda     String?        @map("nomor_agenda")
+  perihal         String
+  asalSurat       String?        @map("asal_surat")
+  tanggalSurat    DateTime       @map("tanggal_surat")
+  tanggalTerima   DateTime       @default(now()) @map("tanggal_terima")
+  currentStatus   DocumentStatus @default(DRAFT) @map("current_status")
+  isVisible       Boolean        @default(true) @map("is_visible")
+  createdById     String         @map("created_by")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
 
   // Relations
-  createdBy      User               @relation("DocumentCreator", fields: [createdById], references: [id])
-  files          DocumentFile[]
-  reviews        DocumentReview[]
-  decisions      DirectorDecision[]
-  handoverLogs   HandoverLog[]
-  archive        Archive?
-  auditLogs      AuditLog[]
-  statusTimeline StatusTimeline[]
+  createdBy       User               @relation("SuratMasukCreator", fields: [createdById], references: [id])
+  files           DocumentFile[]
+  reviews         DocumentReview[]
+  decisions       DirectorDecision[]
+  archive         Archive?
+  auditLogs       AuditLog[]
+  statusTimeline  StatusTimeline[]
+  jadwalDirekturs JadwalDirekturs[]
+  disposisi       LembarDisposisi[]
+  undangan        Undangan?
 
   @@index([currentStatus])
   @@index([createdById])
   @@index([nomorSurat])
-  @@map("documents")
+  @@map("surat_masuk")
 }
 
 // ─────────────────────────────────────────────
@@ -123,7 +139,7 @@ model Document {
 
 model DocumentFile {
   id           String   @id @default(cuid())
-  documentId   String   @map("document_id")
+  suratMasukId String   @map("surat_masuk_id")
   fileType     FileType @map("file_type")
   fileName     String   @map("file_name")
   filePath     String   @map("file_path")
@@ -133,10 +149,10 @@ model DocumentFile {
   uploadedAt   DateTime @default(now()) @map("uploaded_at")
 
   // Relations
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  uploadedBy User     @relation(fields: [uploadedById], references: [id])
+  suratMasuk SuratMasuk @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
+  uploadedBy User       @relation(fields: [uploadedById], references: [id])
 
-  @@index([documentId])
+  @@index([suratMasukId])
   @@index([fileType])
   @@map("document_files")
 }
@@ -147,18 +163,41 @@ model DocumentFile {
 
 model DocumentReview {
   id           String       @id @default(cuid())
-  documentId   String       @map("document_id")
+  suratMasukId String       @map("surat_masuk_id")
   reviewedById String       @map("reviewed_by")
   reviewNote   String?      @map("review_note")
   reviewStatus ReviewStatus @map("review_status")
   reviewedAt   DateTime     @default(now()) @map("reviewed_at")
 
   // Relations
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  reviewedBy User     @relation(fields: [reviewedById], references: [id])
+  suratMasuk SuratMasuk @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
+  reviewedBy User       @relation(fields: [reviewedById], references: [id])
 
-  @@index([documentId])
+  @@index([suratMasukId])
   @@map("document_reviews")
+}
+
+// ─────────────────────────────────────────────
+//  JADWAL KIRIM KE DIREKTUR
+// ─────────────────────────────────────────────
+
+model JadwalDirekturs {
+  id           String    @id @default(cuid())
+  suratMasukId String    @map("surat_masuk_id")
+  createdById  String    @map("created_by")
+  jadwalKirim  DateTime  @map("jadwal_kirim") // Tanggal & jam kirim
+  isUrgen      Boolean   @default(false) @map("is_urgen")
+  isSent       Boolean   @default(false) @map("is_sent")
+  sentAt       DateTime? @map("sent_at")
+  catatan      String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  suratMasuk SuratMasuk @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
+  createdBy  User       @relation(fields: [createdById], references: [id])
+
+  @@index([suratMasukId])
+  @@index([jadwalKirim])
+  @@map("jadwal_direkturs")
 }
 
 // ─────────────────────────────────────────────
@@ -166,41 +205,89 @@ model DocumentReview {
 // ─────────────────────────────────────────────
 
 model DirectorDecision {
-  id           String       @id @default(cuid())
-  documentId   String       @map("document_id")
-  directorId   String       @map("director_id")
-  decisionType DecisionType @map("decision_type")
-  decisionNote String?      @map("decision_note")
-  decidedAt    DateTime     @default(now()) @map("decided_at")
+  id                 String       @id @default(cuid())
+  suratMasukId       String       @map("surat_masuk_id")
+  directorId         String       @map("director_id")
+  decisionType       DecisionType @map("decision_type")
+  decisionNote       String?      @map("decision_note")
+  
+  // Data for Barcode
+  tempat             String?      @map("tempat")
+  tanggalTandaTangan DateTime?    @map("tanggal_tanda_tangan")
+  parafDirektur      String?      @map("paraf_direktur") // Base64
+  
+  decidedAt          DateTime     @default(now()) @map("decided_at")
 
-  // Relations
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  director User     @relation(fields: [directorId], references: [id])
+  suratMasuk SuratMasuk @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
+  director   User       @relation(fields: [directorId], references: [id])
 
-  @@index([documentId])
+  @@index([suratMasukId])
   @@map("director_decisions")
 }
 
 // ─────────────────────────────────────────────
-//  HANDOVER LOGS
+//  LEMBAR DISPOSISI
 // ─────────────────────────────────────────────
 
-model HandoverLog {
-  id                 String         @id @default(cuid())
-  documentId         String         @map("document_id")
-  staffId            String         @map("staff_id")
-  agendarisId        String         @map("agendaris_id")
-  handoverTime       DateTime       @default(now()) @map("handover_time")
-  confirmationStatus HandoverStatus @default(MENUNGGU) @map("confirmation_status")
-  confirmedAt        DateTime?      @map("confirmed_at")
-  notes              String?
+model LembarDisposisi {
+  id           String   @id @default(cuid())
+  suratMasukId String   @map("surat_masuk_id")
+  dariId       String   @map("dari_id")   // direktur
+  keId         String   @map("ke_id")     // admin_staff
+  instruksi    String?
+  keterangan   String?  // Bisa diisi direktur
+  
+  // Data for Barcode
+  tempat             String?  @map("tempat")
+  tanggalTandaTangan DateTime? @map("tanggal_tanda_tangan")
+  parafDariId        String?  @map("paraf_dari_id")
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  // Relations
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  staff    User     @relation(fields: [staffId], references: [id])
+  suratMasuk SuratMasuk @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
+  dari       User       @relation("DisposisiDari", fields: [dariId], references: [id])
+  ke         User       @relation("DisposisiKe", fields: [keId], references: [id])
 
-  @@index([documentId])
-  @@map("handover_logs")
+  @@index([suratMasukId])
+  @@map("lembar_disposisi")
+}
+
+// ─────────────────────────────────────────────
+//  UNDANGAN
+// ─────────────────────────────────────────────
+
+model Undangan {
+  id           String        @id @default(cuid())
+  suratMasukId String        @unique @map("surat_masuk_id")
+  hari         String        // Senin, Selasa, dst
+  tanggal      DateTime
+  jam          String        // "08:00"
+  tempat       String
+  media        UndanganMedia @default(OFFLINE)
+  dresscode    String?
+  catatanLain  String?       @map("catatan_lain")
+  deadline     DateTime      // Deadline kehadiran/konfirmasi
+  googleCalId  String?       @map("google_cal_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  suratMasuk SuratMasuk       @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
+  penerima   UndanganPenerima[]
+
+  @@map("undangan")
+}
+
+model UndanganPenerima {
+  id         String  @id @default(cuid())
+  undanganId String  @map("undangan_id")
+  userId     String  @map("user_id")
+  sudahBaca  Boolean @default(false) @map("sudah_baca")
+
+  undangan Undangan @relation(fields: [undanganId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([undanganId, userId])
+  @@map("undangan_penerima")
 }
 
 // ─────────────────────────────────────────────
@@ -209,17 +296,18 @@ model HandoverLog {
 
 model Archive {
   id             String   @id @default(cuid())
-  documentId     String   @unique @map("document_id")
+  suratMasukId   String   @unique @map("surat_masuk_id")
   archivedById   String   @map("archived_by")
   serverLocation String?  @map("server_location")
+  bulan          Int      // 1-12
+  tahun          Int
   archivedAt     DateTime @default(now()) @map("archived_at")
   notes          String?
 
-  // Relations
-  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  archivedBy User     @relation(fields: [archivedById], references: [id])
+  suratMasuk SuratMasuk @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
+  archivedBy User       @relation(fields: [archivedById], references: [id])
 
-  @@index([documentId])
+  @@index([bulan, tahun])
   @@map("archives")
 }
 
@@ -228,41 +316,40 @@ model Archive {
 // ─────────────────────────────────────────────
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  documentId  String?  @map("document_id")
-  action      String
-  description String?
-  metadata    Json?
-  ipAddress   String?  @map("ip_address")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  suratMasukId String?  @map("surat_masuk_id")
+  action       String
+  description  String?
+  metadata     Json?
+  ipAddress    String?  @map("ip_address")
+  createdAt    DateTime @default(now()) @map("created_at")
 
-  // Relations
-  user     User      @relation(fields: [userId], references: [id])
-  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  user       User        @relation(fields: [userId], references: [id])
+  suratMasuk SuratMasuk? @relation(fields: [suratMasukId], references: [id], onDelete: SetNull)
 
   @@index([userId])
-  @@index([documentId])
+  @@index([suratMasukId])
   @@index([createdAt])
   @@map("audit_logs")
 }
 
 // ─────────────────────────────────────────────
-//  STATUS TIMELINE (Tracking)
+//  STATUS TIMELINE
 // ─────────────────────────────────────────────
 
 model StatusTimeline {
-  id         String          @id @default(cuid())
-  documentId String          @map("document_id")
-  fromStatus DocumentStatus? @map("from_status")
-  toStatus   DocumentStatus  @map("to_status")
-  changedBy  String          @map("changed_by")
-  notes      String?
-  createdAt  DateTime        @default(now()) @map("created_at")
+  id           String         @id @default(cuid())
+  suratMasukId String         @map("surat_masuk_id")
+  fromStatus   DocumentStatus? @map("from_status")
+  toStatus     DocumentStatus @map("to_status")
+  changedById  String         @map("changed_by")
+  notes        String?
+  createdAt    DateTime       @default(now()) @map("created_at")
 
-  // Relations
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  suratMasuk SuratMasuk @relation(fields: [suratMasukId], references: [id], onDelete: Cascade)
+  changedBy  User       @relation("TimelineChangedBy", fields: [changedById], references: [id])
 
-  @@index([documentId])
+  @@index([suratMasukId])
   @@map("status_timeline")
 }

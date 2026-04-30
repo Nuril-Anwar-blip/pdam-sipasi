@@ -5,11 +5,12 @@ import { requireAuth, successResponse, errorResponse, getClientIp } from "@/lib/
 import { createAuditLog, createStatusTimeline } from "@/lib/audit";
 import { archiveDocumentSchema } from "@/lib/validations";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 // POST /api/documents/[id]/archive
 // Admin mengarsipkan dokumen final
-export async function POST(req: NextRequest, { params }: Params) {
+export async function POST(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireAuth(req, async (user, request) => {
     if (user.role !== "ADMIN") {
       return errorResponse("Hanya Admin yang dapat melakukan pengarsipan.", 403);

@@ -6,10 +6,11 @@ import { requireRole, successResponse, errorResponse, getClientIp } from "@/lib/
 import { createAuditLog } from "@/lib/audit";
 import { updateUserSchema } from "@/lib/validations";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 // GET /api/users/[id]
-export async function GET(req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireRole(req, ["ADMIN"], async () => {
     try {
       const u = await prisma.user.findUnique({
@@ -29,7 +30,8 @@ export async function GET(req: NextRequest, { params }: Params) {
 }
 
 // PATCH /api/users/[id]
-export async function PATCH(req: NextRequest, { params }: Params) {
+export async function PATCH(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireRole(req, ["ADMIN"], async (adminUser, request) => {
     try {
       const body = await request.json();
@@ -77,7 +79,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 }
 
 // DELETE /api/users/[id] — soft delete (nonaktifkan)
-export async function DELETE(req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireRole(req, ["ADMIN"], async (adminUser, request) => {
     try {
       if (adminUser.id === params.id) {

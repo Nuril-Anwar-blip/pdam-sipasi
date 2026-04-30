@@ -5,10 +5,11 @@ import { requireAuth, successResponse, errorResponse, getClientIp } from "@/lib/
 import { createAuditLog, createStatusTimeline } from "@/lib/audit";
 import { updateDocumentSchema } from "@/lib/validations";
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 // ─── GET /api/documents/[id] ──────────────────────────────────
-export async function GET(req: NextRequest, { params }: Params) {
+export async function GET(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireAuth(req, async (user) => {
     try {
       const doc = await prisma.document.findUnique({
@@ -52,7 +53,8 @@ export async function GET(req: NextRequest, { params }: Params) {
 
 // ─── PATCH /api/documents/[id] ────────────────────────────────
 // Staff update draft (hanya saat status DRAFT atau PERLU_REVISI)
-export async function PATCH(req: NextRequest, { params }: Params) {
+export async function PATCH(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireAuth(req, async (user, request) => {
     try {
       const doc = await prisma.document.findUnique({ where: { id: params.id } });
@@ -103,7 +105,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
 // ─── DELETE /api/documents/[id] ───────────────────────────────
 // Hanya Admin yang bisa hapus (soft delete via status tidak ada, kita hard delete hanya saat DRAFT)
-export async function DELETE(req: NextRequest, { params }: Params) {
+export async function DELETE(req: NextRequest, props: Params) {
+  const params = await props.params;
   return requireAuth(req, async (user, request) => {
     if (user.role !== "ADMIN") {
       return errorResponse("Hanya Admin yang dapat menghapus dokumen.", 403);
